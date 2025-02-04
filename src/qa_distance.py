@@ -24,7 +24,7 @@ class TrackIdError(Exception):
     pass
 
 
-def draw_graph(idx: list, gps_distance: list, lidar_distance: list, case_name: str):
+def draw_graph(idx: list, gps_distance: list, lidar_distance: list, result_path: str):
     # Calculate the difference (skip None values)
     filtered_idx = []
     distance_difference = []
@@ -83,7 +83,7 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, case_name: s
 
     # Adjust layout and display
     plt.tight_layout()
-    plt.savefig(f"{case_name}.png")  # Save the graph
+    plt.savefig(f"{result_path}/gps_lidar_difference.png")  # Save the graph
     plt.close(fig)  # Close the graph to release resources
 
 
@@ -254,18 +254,18 @@ def main():
     tgt_case_name = args.case_name
     track_ids = list(map(int, args.track_id.split(",")))  # Convert comma-separated track IDs into a list
 
-    result_csv_path = (
-        f"{root_path}/result/{ego_case_name}"  # Save notebook in the ego folder
-    )
-    create_directory(result_csv_path)
+    ego = "TARGET"
+    target = "OWN"
 
+    result_path = (
+        f"{root_path}/result/{ego}_{ego_case_name}"  # Save notebook in the ego folder
+    )
+    create_directory(result_path)
+    
     radius_csv_map = {
         "as280": "../config/as280_vessel_radius_by_angle.csv",
         "sdx290": "../config/sdx290_vessel_radius_by_angle.csv",
     }
-
-    ego = "TARGET"
-    target = "OWN"
 
     ego_sync_path = f"{root_path}/testset/{ego}_{ego_case_name}/oru/sync.csv"
     ego_gps_path = f"{root_path}/testset/{ego}_{ego_case_name}/oru/position.csv"
@@ -293,7 +293,7 @@ def main():
 
     idx_list, gps_distance_list, lidar_distance_list = [], [], []
 
-    output_file = f"output_{ego_case_name}.csv"
+    output_file = f"{result_path}/gps_lidar_output.csv"
     with open(output_file, mode="w", newline="") as file:
         writer = csv.writer(file)
 
@@ -412,13 +412,16 @@ def main():
             # 5) Get data from lidar path
             lidar_distance = get_target_cp_from_csv(lidar_csv, gps_distance, track_ids)
 
-            print(f"gps distance {gps_distance} | lidar_distance {lidar_distance}")
+            if lidar_distance == None:
+                print(f"gps distance {gps_distance:<20} | lidar_distance {lidar_distance}")
+            else:
+                print(f"gps distance {gps_distance:<20} | lidar_distance {lidar_distance:<20}")
 
             idx_list.append(idx)
             gps_distance_list.append(gps_distance)
             lidar_distance_list.append(lidar_distance)
 
-        draw_graph(idx_list, gps_distance_list, lidar_distance_list, ego_case_name)
+        draw_graph(idx_list, gps_distance_list, lidar_distance_list, result_path)
 
 
 if __name__ == "__main__":
