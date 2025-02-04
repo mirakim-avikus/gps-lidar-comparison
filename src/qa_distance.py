@@ -189,17 +189,22 @@ def create_parser():
         help="Type of target boat",
         required=False,
     )
+    parser.add_argument(
+        "--track_id",
+        type=str,
+        default="2",
+        help="Comma-separated list of track IDs",
+        required=True,
+    )
     return parser
 
 
-def get_target_cp_from_csv(lidar_cp_path: str, gps_distance: float, idx: int):
+def get_target_cp_from_csv(lidar_cp_path: str, gps_distance: float, track_ids:list):
     df = pd.read_csv(lidar_cp_path)
     if df.empty:
         return None
 
     try:
-        # TODO : add track ids to check
-        track_ids = []
         if len(track_ids) == 0:
             print("Warning: Please input track IDs.")
             raise TrackIdError("Track IDs are required.")
@@ -247,6 +252,7 @@ def main():
     root_path = args.root_path
     ego_case_name = args.case_name
     tgt_case_name = args.case_name
+    track_ids = list(map(int, args.track_id.split(",")))  # Convert comma-separated track IDs into a list
 
     result_csv_path = (
         f"{root_path}/result/{ego_case_name}"  # Save notebook in the ego folder
@@ -404,7 +410,7 @@ def main():
             )
 
             # 5) Get data from lidar path
-            lidar_distance = get_target_cp_from_csv(lidar_csv, gps_distance, idx)
+            lidar_distance = get_target_cp_from_csv(lidar_csv, gps_distance, track_ids)
 
             print(f"gps distance {gps_distance} | lidar_distance {lidar_distance}")
 
