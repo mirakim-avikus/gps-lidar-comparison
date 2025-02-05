@@ -1,9 +1,3 @@
-Here's the updated `README.txt` with the revised `qa_inference.py` code included:
-
----
-
-### README.txt
-
 # GPS and LiDAR Distance Comparison
 
 ## Overview
