@@ -104,7 +104,8 @@ Before running the scripts, ensure you have the required Python packages install
    Navigate to the `src` folder and run the `qa_distance.py` script with the following command:
 
    ```bash
-   python qa_distance.py --root_path <path_to_data> --case_name <case_name>
+   cd src
+   python3 qa_distance.py --root_path <path_to_data> --case_name <case_name>
    ```
 
    The script will compare the distances between the ego and target GPS positions and their corresponding LiDAR data.
@@ -126,7 +127,8 @@ Before running the scripts, ensure you have the required Python packages install
    Navigate to the `src` folder and run the `qa_inference.py` script with the following command:
 
    ```bash
-   python qa_inference.py --root_path <path_to_data> --case_name <case_name>
+   cd src
+   python3 qa_inference.py --root_path <path_to_data> --case_name <case_name>
    ```
 
    The script will process the camera images, annotations, and target data, generating bounding boxes around detected objects and calculating the distance for each object. A video is also created from the processed images.
