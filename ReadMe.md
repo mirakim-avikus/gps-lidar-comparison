@@ -137,7 +137,3 @@ After running `qa_inference.py`, the results include:
 - A generated video compiled from the processed images, showing the detected objects and their distances.
 
 This script is useful for validating the accuracy of camera data synchronization with target positions, object detection, and distance estimation.
-
---- 
-
-This updated README now includes the revised details for `qa_inference.py` and covers both scripts, providing full instructions on how to run and use them.
