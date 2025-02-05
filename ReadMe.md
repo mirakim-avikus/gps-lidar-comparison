@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository is designed to compare the distances between GPS and LiDAR data, providing a comprehensive analysis of positional discrepancies. The main goal is to analyze how the distances measured by GPS and LiDAR differ under various conditions, and visualize the results through graphical representations.
+This repository is designed to compare the distances between GPS and LiDAR data, providing a comprehensive analysis of positional discrepancies. The main goal is to analyze how the distances measured by GPS and LiDAR differ under various conditions and visualize the results through graphical representations.
 
 ### Directory Structure
 
@@ -53,10 +53,10 @@ repo
 The repository processes data in the following directory structure. The data should be organized under the `data` folder with appropriate files in `targets` and `testset` directories.
 
 1. **targets**:
-    - Contains the distance measurement files from different targets (e.g., OWN and TARGET). The distance data is saved as `cla_output.csv` and the target positions in CSV files.
+    - Contains the distance measurement files from different targets (e.g., OWN and TARGET). The distance data is saved as `cla_output.csv`, and the target positions in CSV files.
 2. **testset**:
-    - Includes the actual measurement files for each vehicle (camera images, lidar data, etc.), organized by timestamp.
-    - Lidar data in `.avikus.pcd` format, with status files like IMU output and temperature readings.
+    - Includes the actual measurement files for each vehicle (camera images, LiDAR data, etc.), organized by timestamp.
+    - LiDAR data in `.avikus.pcd` format, with status files like IMU output and temperature readings.
     - ORU data for attitude, position, and metadata for both ego and target vehicles.
 
 ### Running the Script
@@ -71,21 +71,27 @@ The `qa_inference.py` script processes camera images and corresponding target da
 
 ### Prerequisites
 
-Before running the scripts, ensure you have the following Python packages installed:
+Before running the scripts, ensure you have the required Python packages installed inside a virtual environment.
 
-- `geopy`
-- `pandas`
-- `matplotlib`
-- `numpy`
-- `statistics`
-- `opencv-python`
-- `make_video` (custom script)
+#### Setting Up a Virtual Environment
 
-Install the required packages via pip:
+1. **Create and activate a virtual environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On macOS/Linux
+   venv\Scripts\activate     # On Windows
+   ```
 
-```bash
-pip3 install geopy pandas matplotlib numpy statistics opencv-python
-```
+2. **Install the required packages**:
+   ```bash
+   python3 -m pip install --upgrade pip
+   python3 -m pip install -r requirements.txt
+   ```
+
+3. **Deactivate the virtual environment (if needed)**:
+   ```bash
+   deactivate
+   ```
 
 ### How to Use
 
