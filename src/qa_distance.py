@@ -422,7 +422,7 @@ def main():
             lidar_distance_list.append(lidar_distance)
 
         draw_graph(idx_list, gps_distance_list, lidar_distance_list, result_path)
-        print(f"Distance comparison graph (GPS vs LiDAR) saved at : {result_path}")
+        print(f"Distance comparison graph (GPS vs LiDAR) saved at : '{result_path}/gps_lidar_difference.png'.")
 
 if __name__ == "__main__":
     main()
