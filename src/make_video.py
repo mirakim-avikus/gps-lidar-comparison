@@ -33,7 +33,7 @@ def create_video_from_images(image_list_path, output_video_path, frame_rate=30):
         video_writer.write(image)
 
     video_writer.release()
-    print(f"Video saved successfully at '{output_video_path}'.")
+    print(f"Detection results video saved successfully at '{output_video_path}'.")
 
 
 def create_parser():
