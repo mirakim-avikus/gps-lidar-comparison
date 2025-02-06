@@ -130,6 +130,13 @@ def calculate_bearing(lat1: float, lon1: float, lat2: float, lon2: float):
 
     return compass_bearing
 
+def calculate_relative_bearing(lat1, lon1, lat2, lon2, heading):
+    """
+    Calculate the relative bearing from the ship's heading.
+    """
+    true_bearing = calculate_bearing(lat1, lon1, lat2, lon2)
+    relative_bearing = (true_bearing - heading + 360) % 360  # 0~360° 범위 조정
+    return relative_bearing
 
 def create_directory(directory_path):
     # Create the directory if it doesn't exist
