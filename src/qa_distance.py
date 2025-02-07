@@ -18,19 +18,23 @@ import statistics
 #### Global Variables
 Epsilon = 10000  # (m)
 THRESHOLD_EGO_TGT_GPS = 1000
-
+DISTANCE_THRESHOLD = 4
 
 class TrackIdError(Exception):
     pass
 
 
-def draw_graph(idx: list, gps_distance: list, lidar_distance: list, result_path: str):
+def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative_bearing_list: list, ego_hdg_list: list, tgt_hdg_list: list, own_relative_bearing_list: list, result_path: str):
     # Calculate the difference (skip None values)
     filtered_idx = []
     distance_difference = []
     valid_distance_diff = []
+    in_tgt_relative_bearing_list, in_ego_hdg_delta_list, in_tgt_hdg_delta_list, in_own_relative_bearing_list = [], [], [], []
+    out_tgt_relative_bearing_list, out_ego_hdg_delta_list, out_tgt_hdg_delta_list, out_own_relative_bearing_list = [], [], [], []
 
-    for i, (gps, lidar) in enumerate(zip(gps_distance, lidar_distance)):
+    old_ego_hdg, old_tgt_hdg = -math.inf, -math.inf
+
+    for i, (gps, lidar, tgt_rel_bearing, ego_hdg, tgt_hdg, own_rel_bearing) in enumerate(zip(gps_distance, lidar_distance, tgt_relative_bearing_list, ego_hdg_list, tgt_hdg_list, own_relative_bearing_list)):
         if (
             gps is not None
             and lidar is not None
@@ -40,15 +44,108 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, result_path:
             filtered_idx.append(idx[i])  # Add valid idx
             distance_difference.append(gps - lidar)
             valid_distance_diff.append(gps - lidar)
+            # valid_distance_diff_tgt_rel_bearing.append(abs(math.sin(tgt_rel_bearing)))
+            if (abs(gps - lidar) >= DISTANCE_THRESHOLD):
+                out_tgt_relative_bearing_list.append(tgt_rel_bearing)
+                out_own_relative_bearing_list.append(own_rel_bearing)
+
+                in_tgt_relative_bearing_list.append(None)
+                in_own_relative_bearing_list.append(None)
+
+                ego_hdg_delta = None if old_ego_hdg == -math.inf else ego_hdg - old_ego_hdg 
+                ego_hdg_delta = (ego_hdg_delta / abs(ego_hdg_delta)) * (abs(ego_hdg_delta) - 360) if ego_hdg_delta is not None and abs(ego_hdg_delta) > 100 else ego_hdg_delta
+                out_ego_hdg_delta_list.append(ego_hdg_delta)
+
+                tgt_hdg_delta = None if old_tgt_hdg == -math.inf else tgt_hdg - old_tgt_hdg 
+                tgt_hdg_delta = (tgt_hdg_delta / abs(tgt_hdg_delta)) * (abs(tgt_hdg_delta) - 360) if tgt_hdg_delta is not None and abs(tgt_hdg_delta) > 100 else tgt_hdg_delta
+                out_tgt_hdg_delta_list.append(tgt_hdg_delta)
+
+                in_ego_hdg_delta_list.append(None)
+                in_tgt_hdg_delta_list.append(None)
+
+            else:
+                out_tgt_relative_bearing_list.append(None)
+                out_own_relative_bearing_list.append(None)
+
+                in_tgt_relative_bearing_list.append(tgt_rel_bearing)
+                in_own_relative_bearing_list.append(own_rel_bearing)
+
+                out_ego_hdg_delta_list.append(None)
+                out_tgt_hdg_delta_list.append(None)
+
+                ego_hdg_delta = None if old_ego_hdg == -math.inf else ego_hdg - old_ego_hdg 
+                ego_hdg_delta = (ego_hdg_delta / abs(ego_hdg_delta)) * (abs(ego_hdg_delta) - 360) if ego_hdg_delta is not None and abs(ego_hdg_delta) > 100 else ego_hdg_delta
+                in_ego_hdg_delta_list.append(ego_hdg_delta)
+
+                tgt_hdg_delta = None if old_tgt_hdg == -math.inf else tgt_hdg - old_tgt_hdg 
+                tgt_hdg_delta = (tgt_hdg_delta / abs(tgt_hdg_delta)) * (abs(tgt_hdg_delta) - 360) if tgt_hdg_delta is not None and abs(tgt_hdg_delta) > 100 else tgt_hdg_delta
+                in_tgt_hdg_delta_list.append(tgt_hdg_delta)
+
+            old_ego_hdg, old_tgt_hdg = ego_hdg, tgt_hdg
+
         else:
             filtered_idx.append(idx[i])  # Add valid idx
             distance_difference.append(None)
 
-    mean_dd = statistics.mean(valid_distance_diff)
-    std_dd = statistics.stdev(valid_distance_diff)
+            out_tgt_relative_bearing_list.append(None)
+            out_own_relative_bearing_list.append(None)
+            out_ego_hdg_delta_list.append(None)
+            out_tgt_hdg_delta_list.append(None)
+
+            in_tgt_relative_bearing_list.append(None)
+            in_own_relative_bearing_list.append(None)
+            in_ego_hdg_delta_list.append(None)
+            in_tgt_hdg_delta_list.append(None)
+
+    # Target Rel Bearing when Ego Heading is Zero 
+    mean_dd = round(statistics.mean(valid_distance_diff), 3)
+    std_dd = round(statistics.stdev(valid_distance_diff), 3)
+
+    valid_tgt_relative_bearing = [bearing for bearing in in_tgt_relative_bearing_list+out_tgt_relative_bearing_list if bearing is not None]
+    mean_target_rel_bearing = round(statistics.mean(valid_tgt_relative_bearing), 3)
+    std_target_rel_bearing = round(statistics.stdev(valid_tgt_relative_bearing), 3)
+    if (std_target_rel_bearing > 100):
+        in_tgt_relative_bearing_list = [bearing - 360 if bearing is not None and bearing >= 180 else bearing for bearing in in_tgt_relative_bearing_list]
+        out_tgt_relative_bearing_list = [bearing - 360 if bearing is not None and bearing >= 180 else bearing for bearing in out_tgt_relative_bearing_list]
+        valid_tgt_relative_bearing = [bearing for bearing in in_tgt_relative_bearing_list+out_tgt_relative_bearing_list if bearing is not None]
+        mean_target_rel_bearing = round(statistics.mean(valid_tgt_relative_bearing), 3)
+        std_target_rel_bearing = round(statistics.stdev(valid_tgt_relative_bearing), 3)
+
+    # Own Relative Bearing
+    valid_own_relative_bearing = [bearing for bearing in in_own_relative_bearing_list+out_own_relative_bearing_list if bearing is not None]
+    mean_ego_rel_bearing = round(statistics.mean(valid_own_relative_bearing), 3)
+    std_ego_rel_bearing = round(statistics.stdev(valid_own_relative_bearing), 3)
+    if (std_ego_rel_bearing > 100):
+        in_own_relative_bearing_list = [bearing - 360 if bearing is not None and bearing >= 180 else bearing for bearing in in_own_relative_bearing_list]
+        out_own_relative_bearing_list = [bearing - 360 if bearing is not None and bearing >= 180 else bearing for bearing in out_own_relative_bearing_list]
+        valid_own_relative_bearing = [bearing for bearing in in_own_relative_bearing_list+out_own_relative_bearing_list if bearing is not None]
+        mean_ego_rel_bearing = round(statistics.mean(valid_own_relative_bearing), 3)
+        std_ego_rel_bearing = round(statistics.stdev(valid_own_relative_bearing), 3)
+
+    # Ego Heading Delta 
+    valid_own_hdg_delta = [hdg_delta for hdg_delta in in_ego_hdg_delta_list+out_ego_hdg_delta_list if hdg_delta is not None]
+    mean_ego_hdg_delta = round(statistics.mean(valid_own_hdg_delta), 3)
+    std_ego_hdg_delta = round(statistics.stdev(valid_own_hdg_delta), 3)
+    if (std_ego_hdg_delta > 100):
+        in_ego_hdg_delta_list = [hdg_delta - 360 if hdg_delta is not None and hdg_delta >= 180 else hdg_delta for hdg_delta in in_ego_hdg_delta_list]
+        out_ego_hdg_delta_list = [hdg_delta - 360 if hdg_delta is not None and hdg_delta >= 180 else hdg_delta for hdg_delta in out_ego_hdg_delta_list]
+        valid_own_hdg_delta = [hdg_delta for hdg_delta in in_ego_hdg_delta_list+out_ego_hdg_delta_list if hdg_delta is not None]
+        mean_ego_hdg_delta = round(statistics.mean(valid_own_hdg_delta), 3)
+        std_ego_hdg_delta = round(statistics.stdev(valid_own_hdg_delta), 3)
+
+    # Target Heading 
+    valid_tgt_hdg_delta = [hdg_delta for hdg_delta in in_tgt_hdg_delta_list+out_tgt_hdg_delta_list if hdg_delta is not None]
+    mean_tgt_hdg_delta = round(statistics.mean(valid_tgt_hdg_delta), 3)
+    std_tgt_hdg_delta = round(statistics.stdev(valid_tgt_hdg_delta), 3)
+    if (std_ego_rel_bearing > 100):
+        in_tgt_hdg_delta_list = [hdg_delta - 360 if hdg_delta is not None and hdg_delta >= 180 else hdg_delta for hdg_delta in in_tgt_hdg_delta_list]
+        out_tgt_hdg_delta_list = [hdg_delta - 360 if hdg_delta is not None and hdg_delta >= 180 else hdg_delta for hdg_delta in out_tgt_hdg_delta_list]
+        valid_tgt_hdg_delta = [hdg_delta for hdg_delta in in_tgt_hdg_delta_list+out_tgt_hdg_delta_list if hdg_delta is not None]
+        mean_tgt_hdg_delta = round(statistics.mean(valid_tgt_hdg_delta), 3)
+        std_tgt_hdg_delta = round(statistics.stdev(valid_tgt_hdg_delta), 3)
 
     # Create the graph
-    fig, axs = plt.subplots(2, 1, figsize=(10, 10))  # Two stacked graphs (2x1)
+    fig, axs = plt.subplots(6, 1, figsize=(36, 20))  # Six stacked graphs (6x1)
 
     # First graph: Distance Comparison
     axs[0].plot(idx, gps_distance, color="blue", marker="o", label="GPS Distance")
@@ -72,14 +169,121 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, result_path:
     axs[1].set_ylabel("Difference", fontsize=14)
 
     x_min, x_max = min(idx), max(idx)  # Get the minimum and maximum of idx
-    axs[0].set_xlim(x_min, x_max)  # Set x-axis range for the first graph
-    axs[1].set_xlim(x_min, x_max)  # Set x-axis range for the second graph
+
+    for i in range(len(axs)):
+        axs[i].set_xlim(x_min, x_max)  # Set x-axis range for the first graph
+
+    y_min, y_max = -10, 10 
+    axs[1].set_ylim(y_min, y_max) 
 
     axs[1].axhline(
         y=0, color="red", linestyle="--", linewidth=1
     )  # Add a red dashed line
     axs[1].legend(loc="upper right")
     axs[1].grid(True)
+
+    # Third graph: Distance Difference
+    axs[2].plot(
+        filtered_idx,
+        out_tgt_relative_bearing_list,
+        color="red",
+        marker="^",
+        label=f"Target Relative Bearing (Diff >= {DISTANCE_THRESHOLD})",
+    )
+    axs[2].plot(
+        filtered_idx,
+        in_tgt_relative_bearing_list,
+        color="blue",
+        marker="^",
+        label=f"Target Relative Bearing  (Diff < {DISTANCE_THRESHOLD})",
+    )
+    axs[2].set_title(f"Target Relative Bearing (set Ego Heading as Zero) : mean({mean_target_rel_bearing}), std({std_target_rel_bearing})", fontsize=16)
+    axs[2].set_xlabel("Index", fontsize=14)
+    axs[2].set_ylabel("Degree", fontsize=14)
+
+    axs[2].axhline(
+        y=0, color="red", linestyle="--", linewidth=1
+    )  # Add a red dashed line
+    axs[2].legend(loc="upper right")
+    axs[2].grid(True)
+
+    # Sixth graph: Own Relative Difference
+    axs[3].plot(
+        filtered_idx,
+        out_own_relative_bearing_list,
+        color="red",
+        marker="*",
+        label=f"Own Relative Bearing (Diff >= {DISTANCE_THRESHOLD})",
+    )
+    axs[3].plot(
+        filtered_idx,
+        in_own_relative_bearing_list,
+        color="limegreen",
+        marker="*",
+        label=f"Own Relative Bearing  (Diff < {DISTANCE_THRESHOLD})",
+    )
+    axs[3].set_title(f"Own Relative Bearing : mean({mean_ego_rel_bearing}), std({std_ego_rel_bearing})", fontsize=16)
+    axs[3].set_xlabel("Index", fontsize=14)
+    axs[3].set_ylabel("Degree", fontsize=14)
+
+    axs[3].axhline(
+        y=0, color="red", linestyle="--", linewidth=1
+    )  # Add a red dashed line
+    axs[3].legend(loc="upper right")
+    axs[3].grid(True)
+
+
+    # Forth graph: Distance Difference
+    axs[4].plot(
+        filtered_idx,
+        out_ego_hdg_delta_list,
+        color="red",
+        marker="o",
+        label=f"Ego Heading Delta (Diff >= {DISTANCE_THRESHOLD})",
+    )
+    axs[4].plot(
+        filtered_idx,
+        in_ego_hdg_delta_list,
+        color="orange",
+        marker="o",
+        label=f"Ego Heading (Diff < {DISTANCE_THRESHOLD})",
+    )
+    axs[4].set_title(f"Ego Heading Delta : mean({mean_ego_hdg_delta}), std({std_ego_hdg_delta})", fontsize=16)
+    axs[4].set_xlabel("Index", fontsize=14)
+    axs[4].set_ylabel("Degree", fontsize=14)
+
+    axs[4].axhline(
+        y=0, color="red", linestyle="--", linewidth=1
+    )  # Add a red dashed line
+    axs[4].legend(loc="upper right")
+    axs[4].grid(True)
+
+
+    # Fifth graph: Distance Difference
+    axs[5].plot(
+        filtered_idx,
+        out_tgt_hdg_delta_list,
+        color="red",
+        marker="s",
+        label=f"Target Heading (Diff >= {DISTANCE_THRESHOLD})",
+    )
+    axs[5].plot(
+        filtered_idx,
+        in_tgt_hdg_delta_list,
+        color="green",
+        marker="s",
+        label=f"Target Heading  (Diff < {DISTANCE_THRESHOLD})",
+    )
+    axs[5].set_title(f"Target Heading Delta : mean({mean_tgt_hdg_delta}), std({std_tgt_hdg_delta})", fontsize=16)
+    axs[5].set_xlabel("Index", fontsize=14)
+    axs[5].set_ylabel("Degree", fontsize=14)
+
+    axs[5].axhline(
+        y=0, color="red", linestyle="--", linewidth=1
+    )  # Add a red dashed line
+    axs[5].legend(loc="upper right")
+    axs[5].grid(True)
+
 
     # Adjust layout and display
     plt.tight_layout()
@@ -298,7 +502,8 @@ def main():
         key=lambda x: int(x.split("_")[0]),
     )
 
-    idx_list, gps_distance_list, lidar_distance_list = [], [], []
+    idx_list, gps_distance_list, lidar_distance_list, tgt_relative_bearing_list = [], [], [], []
+    ego_hdg_list, tgt_hdg_list, own_relative_bearing_list = [], [], []
 
     output_file = f"{result_path}/gps_lidar_output.csv"
     with open(output_file, mode="w", newline="") as file:
@@ -314,7 +519,13 @@ def main():
                 "tgt_gps_timestamp",
                 "tgt_lat",
                 "tgt_lon",
-                "lidar_timestamp",
+                "ego_hdg",
+                "tgt_hdg",
+                "bearing",
+                "own_relative_bearing",
+                "tgt_relative_bearing",
+                "gps_distance",
+                "lidar_distance",                
                 "lidar_path",
             ]
         )
@@ -375,19 +586,6 @@ def main():
             _, ego_lat, ego_lon, _, ego_hdg = list(ego_gps_data)  # lat, lon, cog, hdg
             _, tgt_lat, tgt_lon, _, tgt_hdg = list(tgt_gps_data)
 
-            writer.writerow(
-                [
-                    idx,
-                    ego_gps_data.iloc[0],
-                    ego_lat,
-                    ego_lon,
-                    tgt_gps_data.iloc[0],
-                    tgt_lat,
-                    tgt_lon,
-                    get_closest_lidar_csv(ego_gps_data[0], lidar_path_list),
-                ]
-            )
-
             # 1) Calculate bearing
             bearing = calculate_bearing(ego_lat, ego_lon, tgt_lat, tgt_lon)
 
@@ -428,8 +626,33 @@ def main():
             idx_list.append(idx)
             gps_distance_list.append(gps_distance)
             lidar_distance_list.append(lidar_distance)
+            tgt_relative_bearing_list.append(tgt_relative_bearing)
+            ego_hdg_list.append(ego_hdg)
+            tgt_hdg_list.append(tgt_hdg)
+            own_relative_bearing_list.append(own_relative_bearing)
 
-        draw_graph(idx_list, gps_distance_list, lidar_distance_list, result_path)
+            writer.writerow(
+                [
+                    idx,
+                    ego_gps_data.iloc[0],
+                    ego_lat,
+                    ego_lon,
+                    tgt_gps_data.iloc[0],
+                    tgt_lat,
+                    tgt_lon,
+                    ego_hdg,
+                    tgt_hdg,
+                    bearing,
+                    own_relative_bearing,
+                    tgt_relative_bearing,
+                    gps_distance,
+                    lidar_distance,
+                    get_closest_lidar_csv(ego_gps_data[0], lidar_path_list),
+                ]
+            )
+
+
+        draw_graph(idx_list, gps_distance_list, lidar_distance_list, tgt_relative_bearing_list, ego_hdg_list, tgt_hdg_list, own_relative_bearing_list, result_path)
         print(f"Distance comparison graph (GPS vs LiDAR) saved at : '{result_path}/gps_lidar_difference.png'.")
 
 if __name__ == "__main__":
