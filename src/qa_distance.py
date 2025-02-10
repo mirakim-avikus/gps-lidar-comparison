@@ -611,7 +611,7 @@ def main():
             # 2) Adjust target to have ego heading as 0, then measure relative bearing
             # Relative bearing: the angle measured clockwise from the target's perspective
             own_relative_bearing = calculate_relative_bearing(ego_lat, ego_lon, tgt_lat, tgt_lon, ego_hdg)
-            tgt_relative_bearing = (180 + own_relative_bearing + ego_hdg - tgt_hdg) % 360
+            tgt_relative_bearing = (180 + bearing - tgt_hdg) % 360
 
             # 3) Read table based on the bearing angle to get values
             ego_boat_radius_path = radius_csv_map[ego_boat_type]
