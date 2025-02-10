@@ -29,8 +29,8 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative
     filtered_idx = []
     distance_difference = []
     valid_distance_diff = []
-    in_tgt_relative_bearing_list, in_ego_hdg_delta_list, in_tgt_hdg_delta_list, in_own_relative_bearing_list = [], [], [], []
-    out_tgt_relative_bearing_list, out_ego_hdg_delta_list, out_tgt_hdg_delta_list, out_own_relative_bearing_list = [], [], [], []
+    in_tgt_relative_bearing_list, in_ego_hdg_delta_list, in_tgt_hdg_delta_list, in_own_relative_bearing_list, in_distance_list = [], [], [], [], []
+    out_tgt_relative_bearing_list, out_ego_hdg_delta_list, out_tgt_hdg_delta_list, out_own_relative_bearing_list, out_distance_list = [], [], [], [], []
 
     old_ego_hdg, old_tgt_hdg = -math.inf, -math.inf
 
@@ -63,6 +63,9 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative
                 in_ego_hdg_delta_list.append(None)
                 in_tgt_hdg_delta_list.append(None)
 
+                out_distance_list.append(gps - lidar)
+                in_distance_list.append(None)
+
             else:
                 out_tgt_relative_bearing_list.append(None)
                 out_own_relative_bearing_list.append(None)
@@ -81,6 +84,9 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative
                 tgt_hdg_delta = (tgt_hdg_delta / abs(tgt_hdg_delta)) * (abs(tgt_hdg_delta) - 360) if tgt_hdg_delta is not None and abs(tgt_hdg_delta) > 100 else tgt_hdg_delta
                 in_tgt_hdg_delta_list.append(tgt_hdg_delta)
 
+                in_distance_list.append(gps - lidar)
+                out_distance_list.append(None)
+
             old_ego_hdg, old_tgt_hdg = ego_hdg, tgt_hdg
 
         else:
@@ -96,6 +102,8 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative
             in_own_relative_bearing_list.append(None)
             in_ego_hdg_delta_list.append(None)
             in_tgt_hdg_delta_list.append(None)
+            in_distance_list.append(None)
+            out_distance_list.append(None)
 
     # Target Rel Bearing when Ego Heading is Zero 
     mean_dd = round(statistics.mean(valid_distance_diff), 3)
@@ -159,10 +167,17 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative
     # Second graph: Distance Difference
     axs[1].plot(
         filtered_idx,
-        distance_difference,
+        in_distance_list,
         color="orange",
         marker="^",
-        label="GPS - LiDAR Difference",
+        label="GPS - LiDAR Difference (Diff < {DISTANCE_THRESHOLD})",
+    )
+    axs[1].plot(
+        filtered_idx,
+        out_distance_list,
+        color="red",
+        marker="^",
+        label="GPS - LiDAR Difference (Diff >= {DISTANCE_THRESHOLD})",
     )
     axs[1].set_title(f"GPS - LiDAR : mean({mean_dd}), std({std_dd})", fontsize=16)
     axs[1].set_xlabel("Index", fontsize=14)
@@ -178,6 +193,9 @@ def draw_graph(idx: list, gps_distance: list, lidar_distance: list, tgt_relative
 
     axs[1].axhline(
         y=0, color="red", linestyle="--", linewidth=1
+    )  # Add a red dashed line
+    axs[1].axhline(
+        y=4, color="red", linestyle="--", linewidth=1
     )  # Add a red dashed line
     axs[1].legend(loc="upper right")
     axs[1].grid(True)
