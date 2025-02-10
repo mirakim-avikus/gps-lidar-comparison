@@ -431,7 +431,7 @@ def create_parser():
 def get_target_cp_from_csv(lidar_cp_path: str, gps_distance: float, track_ids:list):
     df = pd.read_csv(lidar_cp_path)
     if df.empty:
-        return None
+        return None, None, None
 
     try:
         if len(track_ids) == 0:
@@ -448,13 +448,13 @@ def get_target_cp_from_csv(lidar_cp_path: str, gps_distance: float, track_ids:li
         min_diff_index = df_boat["distance_diff"].idxmin()
         closest_item = df_boat.loc[min_diff_index, "distance"].item()
         if abs(closest_item - gps_distance) > 20:
-            return None
-        return closest_item
+            return None, None, None
+        return closest_item, df_boat.loc[min_diff_index, "trackid"].item(), df_boat.loc[min_diff_index, "objtype"].item()
     except TrackIdError as e:
         print(e)
         sys.exit("Program terminated due to missing track IDs.")
     except:
-        return None
+        return None, None, None
 
 
 def get_closest_lidar_csv(sync_lidar_ts, lidar_path_list):
@@ -544,7 +544,8 @@ def main():
                 "tgt_relative_bearing",
                 "gps_distance",
                 "lidar_distance",                
-                "lidar_path",
+                "track_id",
+                "class_id",
             ]
         )
 
@@ -634,7 +635,7 @@ def main():
             )
 
             # 5) Get data from lidar path
-            lidar_distance = get_target_cp_from_csv(lidar_csv, gps_distance, track_ids)
+            lidar_distance, track_id, class_id = get_target_cp_from_csv(lidar_csv, gps_distance, track_ids)
 
             if lidar_distance == None:
                 print(f"gps distance {gps_distance:<20} | lidar_distance {lidar_distance}")
@@ -665,7 +666,8 @@ def main():
                     tgt_relative_bearing,
                     gps_distance,
                     lidar_distance,
-                    get_closest_lidar_csv(ego_gps_data[0], lidar_path_list),
+                    track_id,
+                    class_id,
                 ]
             )
 
