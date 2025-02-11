@@ -48,8 +48,9 @@ def create_parser():
         type=str,
         default="../data/QUANTATIVE_TEST",
         help="Root path of data",
+        required=True
     )
-    parser.add_argument("--case_name", type=str, default="000", help="Case name")
+    parser.add_argument("--case_name", type=str, default="000", help="Case name", required=True)
     return parser
 
 
